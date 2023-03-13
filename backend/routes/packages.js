@@ -3,14 +3,17 @@ const axios = require('axios');
 const { urlencoded } = require('express');
 let Package = require('../models/package.model');
 
+// if route is .../packages/, then returns all packages from DB in json format
 router.route('/').get((req, res) => {
     Package.find()
         .then(packages => res.json(packages))
         .catch(err => res.status(400).json('Error: ' + err));
 });
 
+// if route is .../packages/track/trackingNumber,
 router.route('/track/:trackingNumber').get(async (req, res) => {
     try {
+        // attempt to get OAuth token from FedEx Auth API
         const OAuth = await axios.post(
             'https://apis-sandbox.fedex.com/oauth/token',
             {
@@ -25,32 +28,42 @@ router.route('/track/:trackingNumber').get(async (req, res) => {
             }
         );
 
+        // attempt to get a response from tracking API
         const response = await axios.post(
             'https://apis-sandbox.fedex.com/track/v1/trackingnumbers',
             {
-                includeDetailsScans: true,
-                trackingInfo: [{ trackingNumber: req.params.trackingNumber }],
+                'includeDetailedScans': true,
+                'trackingInfo': [
+                    {
+                        'trackingNumberInfo': {
+                            'trackingNumber': req.params.trackingNumber
+                        }
+                    }
+                ],
             },
             {
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + OAuth.data.access_token,
-                    'X-locale': 'en_US'
+                    'content-type': 'application/json',
+                    'authorization': 'Bearer ' + OAuth.data.access_token,
+                    'x-locale': 'en_US'
                 },
             }
         );
-
-        const trackingData = response?.data?.TrackingPackagesResponse?.packageList?.[0]
+        // trackingData is the response that is received after API is called
+        const trackingData = response.data;
         if (!trackingData) {
             throw new Error('Unable to retrieve tracking information');
         }
         res.json(trackingData);
     } catch (error) {
-        console.error(error);
+        console.error(error.res.errors);
         res.status(500).json('Error: Unable to retrieve tracking information' + error);
     }
 });
 
+// if route is .../packages/add, then (in json) add all schema vars and
+// create a new package with the variables
+// then save the package
 router.route('/add').post((req, res) => {
     const username = req.body.username;
     const status = req.body.status;
@@ -69,18 +82,26 @@ router.route('/add').post((req, res) => {
         .catch(err => res.status(400).json('Error: ' + err));
 });
 
+// if route is .../packages/:id and GET request where :id is the id from DB
+// then find the package by id through the database
+// and print it out 
 router.route('/:id').get((req, res) => {
     Package.findById(req.params.id)
         .then((package) => res.json(package))
         .catch(err => res.status(400).json('Error:' + err));
 });
 
+// if route is .../packages/:id and DELETE request where :id is the id from the DB
+// then find the package by ID and delete it
 router.route('/:id').delete((req, res) => {
     Package.findByIdAndDelete(req.params.id)
         .then(() => res.json('Package deleted!'))
         .catch(err => res.status(400).json('Error:' + err)); 
 });
 
+// if route is .../packages/update/:id, find the package
+// give updated schema vars
+// and save the package to DB
 router.route('/update/:id').post((req, res) => {
     Package.findById(req.params.id)
         .then(package => {
