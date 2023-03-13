@@ -17,6 +17,7 @@ router.route('/track/:trackingNumber').get(async (req, res) => {
         // attempt to get OAuth token from FedEx Auth API
         const OAuth = await axios.post(
             'https://apis-sandbox.fedex.com/oauth/token',
+            // request body schema
             {
                 'grant_type': 'client_credentials',
                 'client_id': process.env.CLIENT_ID,
@@ -32,6 +33,7 @@ router.route('/track/:trackingNumber').get(async (req, res) => {
         // attempt to get a response from tracking API
         const response = await axios.post(
             'https://apis-sandbox.fedex.com/track/v1/trackingnumbers',
+            // request body schema
             {
                 'includeDetailedScans': true,
                 'trackingInfo': [
