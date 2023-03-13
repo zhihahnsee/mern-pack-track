@@ -2,6 +2,7 @@ const router = require('express').Router();
 const axios = require('axios');
 const { urlencoded } = require('express');
 let Package = require('../models/package.model');
+require('dotenv').config({ path: '../.env' });
 
 // if route is .../packages/, then returns all packages from DB in json format
 router.route('/').get((req, res) => {
@@ -18,8 +19,8 @@ router.route('/track/:trackingNumber').get(async (req, res) => {
             'https://apis-sandbox.fedex.com/oauth/token',
             {
                 'grant_type': 'client_credentials',
-                'client_id': 'l74af01797cdba43cfbaddbafd26874463',
-                'client_secret': '05dc21b446944ec080ad7806f87d09af',
+                'client_id': process.env.CLIENT_ID,
+                'client_secret': process.env.CLIENT_SECRET,
             },
             {
                 headers: {
